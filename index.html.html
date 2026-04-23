@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>表揚狀產生器</title>
+  <style>
+    :root {
+      --frame-outer: #c8a34a;
+      --frame-inner: #ead18e;
+      --line: #8e8e8e;
+      --text: #111;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: #ececec;
+      color: var(--text);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      min-height: 100vh;
+    }
+
+    .panel {
+      background: #fff;
+      border-right: 1px solid #ddd;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .panel h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .tip {
+      margin: 0 0 18px;
+      color: #666;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .group {
+      margin-bottom: 16px;
+      border: 1px solid #e8e8e8;
+      border-radius: 12px;
+      padding: 14px;
+      background: #fafafa;
+    }
+
+    .group-title {
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    .field label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      background: #fff;
+    }
+
+    .field textarea {
+      min-height: 130px;
+      resize: vertical;
+      line-height: 1.8;
+    }
+
+    .path-box {
+      font-size: 12px;
+      line-height: 1.7;
+      color: #666;
+      padding: 10px 12px;
+      border: 1px dashed #ccc;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .primary {
+      background: #1565ff;
+      color: #fff;
+    }
+
+    .secondary {
+      background: #f3f3f3;
+      color: #222;
+      border: 1px solid #d7d7d7;
+    }
+
+    .preview-wrap {
+      padding: 28px;
+      overflow: auto;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+      background-color: #fff;
+      background-image: url('assets/bg/normal.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      flex: 0 0 auto;
+    }
+
+    .page::before,
+    .page::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .page::before {
+      inset: 9mm;
+      border: 1.4px solid var(--frame-outer);
+    }
+
+    .page::after {
+      inset: 5mm;
+      border: 1px solid var(--frame-inner);
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      height: 297mm;
+      padding: 20mm 18mm 16mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .logo-box {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 22mm;
+      margin-top: 2mm;
+      flex: 0 0 auto;
+    }
+
+    .logo-box img {
+      max-width: 120mm;
+      max-height: 24mm;
+      object-fit: contain;
+      display: block;
+    }
+
+    .company {
+      margin-top: 10mm;
+      font-size: 9mm;
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: center;
+      flex: 0 0 auto;
+    }
+
+    .title {
+      margin-top: 4mm;
+      font-size: 13mm;
+      font-weight: 900;
+      letter-spacing: 3mm;
+      line-height: 1.2;
+      text-align: center;
+      flex: 0 0 auto;
+    }
+
+    .name {
+      margin-top: 18mm;
+      padding: 0 10mm 2mm;
+      min-width: 90mm;
+      border-bottom: 0.35mm solid var(--line);
+      font-size: 24mm;
+      line-height: 1;
+      font-weight: 500;
+      text-align: center;
+      letter-spacing: 1mm;
+      flex: 0 0 auto;
+    }
+
+    .name small {
+      font-size: 8mm;
+      font-weight: 700;
+      margin-left: 3mm;
+    }
+
+    .body-text {
+      width: 100%;
+      max-width: 138mm;
+      margin-top: 14mm;
+      padding-top: 6mm;
+      border-top: 0.35mm solid var(--line);
+      font-size: 6.2mm;
+      line-height: 1.8;
+      text-align: justify;
+      white-space: pre-wrap;
+      flex: 0 0 auto;
+    }
+
+    .sign-area {
+      margin-top: auto;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 24mm;
+      padding-top: 8mm;
+      padding-bottom: 4mm;
+      flex: 0 0 auto;
+    }
+
+    .sign-block {
+      width: 58mm;
+      text-align: center;
+    }
+
+    .sign-image-wrap {
+      height: 26mm;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      margin-bottom: 2mm;
+    }
+
+    .sign-image-wrap img {
+      max-width: 100%;
+      max-height: 22mm;
+      object-fit: contain;
+      display: block;
+    }
+
+    .date-text {
+      min-height: 10mm;
+      margin-bottom: 2mm;
+      font-size: 7mm;
+      line-height: 1.2;
+    }
+
+    .line-label {
+      border-top: 0.35mm solid var(--line);
+      padding-top: 2mm;
+      font-size: 4.8mm;
+      letter-spacing: 2mm;
+      line-height: 1.2;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      html, body {
+        width: 210mm;
+        height: 297mm;
+        background: #fff;
+        overflow: hidden;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .app {
+        display: block;
+        min-height: auto;
+      }
+
+      .panel {
+        display: none !important;
+      }
+
+      .preview-wrap {
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .page {
+        width: 210mm;
+        height: 297mm;
+        box-shadow: none;
+        margin: 0;
+        overflow: hidden;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <h1>表揚狀產生器</h1>
+      <p class="tip">這版已修正為：保留左側編輯欄位、移除副標題、並固定 A4 單頁列印。</p>
+
+      <div class="group">
+        <div class="group-title">基本內容</div>
+        <div class="field">
+          <label for="awardType">獎狀名稱</label>
+          <input id="awardType" type="text" value="小隊長表揚狀" />
+        </div>
+        <div class="field">
+          <label for="recipientName">姓名</label>
+          <input id="recipientName" type="text" value="王小明" />
+        </div>
+        <div class="field">
+          <label for="awardDate">日期</label>
+          <input id="awardDate" type="text" value="2026.04.21" />
+        </div>
+        <div class="field">
+          <label for="awardContent">內容</label>
+          <textarea id="awardContent">擔任小隊長期間，熱心協助隊員處理營業與服務相關問題，並積極配合公司管理與溝通協調，對團隊運作貢獻良多，特頒此狀，以資表揚。</textarea>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">樣式</div>
+        <div class="field">
+          <label for="themeSelect">框線色系</label>
+          <select id="themeSelect">
+            <option value="gold">金色</option>
+            <option value="blue">藍色</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="bgSelect">背景樣式</label>
+          <select id="bgSelect">
+            <option value="normal">隊員頒獎</option>
+            <option value="special">特殊活動用</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">固定素材路徑</div>
+        <div class="path-box">assets/bg/normal.png<br>assets/bg/special.png<br>assets/logo/logo.png<br>assets/sign/signature.png</div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" type="button" id="printBtn">列印 / 存成 PDF</button>
+        <button class="secondary" type="button" id="resetBtn">重設預設值</button>
+      </div>
+    </aside>
+
+    <main class="preview-wrap">
+      <section class="page" id="page">
+        <div class="content">
+          <div class="logo-box">
+            <img src="assets/logo/logo.png" alt="公司LOGO" />
+          </div>
+
+          <div class="company">台灣大車隊股份有限公司</div>
+          <div class="title" id="previewAwardType">小 隊 長 表 揚 狀</div>
+
+          <div class="name" id="previewName">王小明<small>君</small></div>
+
+          <div class="body-text" id="previewBody">擔任小隊長期間，熱心協助隊員處理營業與服務相關問題，並積極配合公司管理與溝通協調，對團隊運作貢獻良多，特頒此狀，以資表揚。</div>
+
+          <div class="sign-area">
+            <div class="sign-block">
+              <div class="sign-image-wrap">
+                <img src="assets/sign/signature.png" alt="總經理簽名" />
+              </div>
+              <div class="line-label">總經理</div>
+            </div>
+            <div class="sign-block">
+              <div class="date-text" id="previewDate">2026.04.21</div>
+              <div class="line-label">日　期</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const awardType = document.getElementById('awardType');
+    const recipientName = document.getElementById('recipientName');
+    const awardDate = document.getElementById('awardDate');
+    const awardContent = document.getElementById('awardContent');
+    const themeSelect = document.getElementById('themeSelect');
+    const bgSelect = document.getElementById('bgSelect');
+    const printBtn = document.getElementById('printBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const page = document.getElementById('page');
+    const previewAwardType = document.getElementById('previewAwardType');
+    const previewName = document.getElementById('previewName');
+    const previewDate = document.getElementById('previewDate');
+    const previewBody = document.getElementById('previewBody');
+
+    const defaults = {
+      awardType: '小隊長表揚狀',
+      recipientName: '王小明',
+      awardDate: '2026.04.21',
+      awardContent: '擔任小隊長期間，熱心協助隊員處理營業與服務相關問題，並積極配合公司管理與溝通協調，對團隊運作貢獻良多，特頒此狀，以資表揚。',
+      theme: 'gold',
+      bg: 'normal'
+    };
+
+    const themeMap = {
+      gold: { outer: '#c8a34a', inner: '#ead18e' },
+      blue: { outer: '#40649b', inner: '#a9bfe2' }
+    };
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function spacingText(str) {
+      return str.split('').join(' ');
+    }
+
+    function applyTheme(themeKey) {
+      const theme = themeMap[themeKey] || themeMap.gold;
+      page.style.setProperty('--frame-outer', theme.outer);
+      page.style.setProperty('--frame-inner', theme.inner);
+    }
+
+    function applyBackground() {
+      const bg = bgSelect.value || 'normal';
+      page.style.backgroundImage = `url('assets/bg/${bg}.png')`;
+      page.style.backgroundSize = 'cover';
+      page.style.backgroundPosition = 'center';
+      page.style.backgroundRepeat = 'no-repeat';
+    }
+
+    function updatePreview() {
+      const currentAwardType = awardType.value.trim() || defaults.awardType;
+      const currentName = recipientName.value.trim() || defaults.recipientName;
+      const currentDate = awardDate.value.trim() || defaults.awardDate;
+      const currentContent = awardContent.value.trim() || defaults.awardContent;
+
+      previewAwardType.textContent = spacingText(currentAwardType);
+      previewName.innerHTML = `${escapeHtml(currentName)}<small>君</small>`;
+      previewDate.textContent = currentDate;
+      previewBody.textContent = currentContent;
+    }
+
+    function resetAll() {
+      awardType.value = defaults.awardType;
+      recipientName.value = defaults.recipientName;
+      awardDate.value = defaults.awardDate;
+      awardContent.value = defaults.awardContent;
+      themeSelect.value = defaults.theme;
+      bgSelect.value = defaults.bg;
+      applyTheme(defaults.theme);
+      applyBackground();
+      updatePreview();
+    }
+
+    awardType.addEventListener('input', updatePreview);
+    recipientName.addEventListener('input', updatePreview);
+    awardDate.addEventListener('input', updatePreview);
+    awardContent.addEventListener('input', updatePreview);
+    themeSelect.addEventListener('change', () => applyTheme(themeSelect.value));
+    bgSelect.addEventListener('change', applyBackground);
+    printBtn.addEventListener('click', () => window.print());
+    resetBtn.addEventListener('click', resetAll);
+
+    resetAll();
+  </script>
+</body>
+</html>
